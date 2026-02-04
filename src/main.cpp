@@ -1,11 +1,9 @@
-#include <windows.h>
+#include <iostream>
+#include "inventory.h"
 
 int main() {
-    MessageBoxA(
-        NULL,
-        "Windows Agent is running",
-        "windows-agent",
-        MB_OK | MB_ICONINFORMATION
-    );
+    
+    std::cout << "Enumerating installed applications ...\n\n";
+    enumerateInstalledApplications();
     return 0;
 }
