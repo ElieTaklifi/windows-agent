@@ -1,9 +1,17 @@
 #include <iostream>
 #include "inventory.h"
+#include "json_builder.h"
 
 int main() {
-    
-    std::cout << "Enumerating installed applications ...\n\n";
-    enumerateInstalledApplications();
+    JsonBuilder builder;
+
+    enumerateInstalledApplications(builder);
+
+    if (builder.writeToFile("inventory.json")) {
+        std::cout << "Inventory written to inventory.json\n";
+    } else {
+        std::cerr << "Failed to write inventory file\n";
+    }
+
     return 0;
 }

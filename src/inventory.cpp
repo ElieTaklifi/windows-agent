@@ -1,171 +1,142 @@
 #include "inventory.h"
 #include <windows.h>
-#include <iostream>
+#include <sddl.h>
+#include <lmcons.h>
 
-static void readUninstallKey(const char* rootPath) {
+static std::string sidToUsername(const std::string& sid) {
+    PSID pSid = nullptr;
+    if (!ConvertStringSidToSidA(sid.c_str(), &pSid))
+        return "";
+
+    char name[UNLEN + 1];
+    char domain[UNLEN + 1];
+    DWORD nameLen = UNLEN + 1;
+    DWORD domainLen = UNLEN + 1;
+    SID_NAME_USE use;
+
+    std::string result;
+
+    if (LookupAccountSidA(nullptr, pSid, name, &nameLen, domain, &domainLen, &use))
+        result = std::string(domain) + "\\" + name;
+
+    LocalFree(pSid);
+    return result;
+}
+
+static void readUninstallKey(
+    HKEY root,
+    const std::string& subPath,
+    const std::string& scope,
+    const std::string& user,
+    JsonBuilder& builder)
+{
     HKEY hKey;
-
-    if (RegOpenKeyExA(
-            HKEY_LOCAL_MACHINE,
-            rootPath,
-            0,
-            KEY_READ,
-            &hKey) != ERROR_SUCCESS) {
+    if (RegOpenKeyExA(root, subPath.c_str(), 0, KEY_READ, &hKey) != ERROR_SUCCESS)
         return;
-    }
 
     char subKeyName[256];
-    DWORD subKeySize = 256;
     DWORD index = 0;
 
-    while (RegEnumKeyExA(
-               hKey,
-               index,
-               subKeyName,
-               &subKeySize,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr) == ERROR_SUCCESS) {
+    while (true) {
+        DWORD subKeySize = sizeof(subKeyName);
+        if (RegEnumKeyExA(hKey, index++, subKeyName, &subKeySize,
+                          nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+            break;
 
         HKEY hSubKey;
-        if (RegOpenKeyExA(
-                hKey,
-                subKeyName,
-                0,
-                KEY_READ,
-                &hSubKey) == ERROR_SUCCESS) {
+        if (RegOpenKeyExA(hKey, subKeyName, 0, KEY_READ, &hSubKey) != ERROR_SUCCESS)
+            continue;
 
-            char displayName[512];
-            DWORD size = sizeof(displayName);
+        char name[512];
+        DWORD size = sizeof(name);
 
-            if (RegQueryValueExA(
-                    hSubKey,
-                    "DisplayName",
-                    nullptr,
-                    nullptr,
-                    (LPBYTE)displayName,
-                    &size) == ERROR_SUCCESS) {
+        if (RegQueryValueExA(hSubKey, "DisplayName", nullptr, nullptr,
+                             (LPBYTE)name, &size) == ERROR_SUCCESS) {
 
-                char version[128] = "";
-                char publisher[256] = "";
-                char installPath[512] = "";
+            ApplicationRecord app;
+            app.scope = scope;
+            app.user = user;
+            app.name = name;
 
-                size = sizeof(version);
-                RegQueryValueExA(hSubKey, "DisplayVersion", nullptr, nullptr, (LPBYTE)version, &size);
+            char buffer[512];
 
-                size = sizeof(publisher);
-                RegQueryValueExA(hSubKey, "Publisher", nullptr, nullptr, (LPBYTE)publisher, &size);
+            size = sizeof(buffer);
+            if (RegQueryValueExA(hSubKey, "DisplayVersion", nullptr, nullptr,
+                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+                app.version = buffer;
 
-                size = sizeof(installPath);
-                RegQueryValueExA(hSubKey, "InstallLocation", nullptr, nullptr, (LPBYTE)installPath, &size);
+            size = sizeof(buffer);
+            if (RegQueryValueExA(hSubKey, "Publisher", nullptr, nullptr,
+                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+                app.publisher = buffer;
 
-                std::cout << "Application:\n";
-                std::cout << "  Name: " << displayName << "\n";
-                if (*version) std::cout << "  Version: " << version << "\n";
-                if (*publisher) std::cout << "  Publisher: " << publisher << "\n";
-                if (*installPath) std::cout << "  Path: " << installPath << "\n";
-                std::cout << "-----------------------------\n";
-            }
+            size = sizeof(buffer);
+            if (RegQueryValueExA(hSubKey, "InstallLocation", nullptr, nullptr,
+                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
+                app.installPath = buffer;
 
-            RegCloseKey(hSubKey);
+            builder.addApplication(app);
         }
 
-        index++;
-        subKeySize = 256;
+        RegCloseKey(hSubKey);
     }
 
     RegCloseKey(hKey);
 }
 
-static void readUninstallKeyCurrentUser(const char* rootPath) {
-    HKEY hKey;
-
-    if (RegOpenKeyExA(
-            HKEY_CURRENT_USER,
-            rootPath,
-            0,
-            KEY_READ,
-            &hKey) != ERROR_SUCCESS) {
+static void enumeratePerUser(JsonBuilder& builder) {
+    HKEY hUsers;
+    if (RegOpenKeyExA(HKEY_USERS, nullptr, 0, KEY_READ, &hUsers) != ERROR_SUCCESS)
         return;
-    }
 
-    char subKeyName[256];
-    DWORD subKeySize = 256;
+    char sid[256];
     DWORD index = 0;
 
-    while (RegEnumKeyExA(
-               hKey,
-               index,
-               subKeyName,
-               &subKeySize,
-               nullptr,
-               nullptr,
-               nullptr,
-               nullptr) == ERROR_SUCCESS) {
+    while (true) {
+        DWORD sidSize = sizeof(sid);
+        if (RegEnumKeyExA(hUsers, index++, sid, &sidSize,
+                          nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+            break;
 
-        HKEY hSubKey;
-        if (RegOpenKeyExA(
-                hKey,
-                subKeyName,
-                0,
-                KEY_READ,
-                &hSubKey) == ERROR_SUCCESS) {
+        if (strncmp(sid, "S-1-5-", 6) != 0)
+            continue;
 
-            char displayName[512];
-            DWORD size = sizeof(displayName);
+        std::string user = sidToUsername(sid);
+        if (user.empty())
+            continue;
 
-            if (RegQueryValueExA(
-                    hSubKey,
-                    "DisplayName",
-                    nullptr,
-                    nullptr,
-                    (LPBYTE)displayName,
-                    &size) == ERROR_SUCCESS) {
+        std::string path = std::string(sid) +
+            "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
 
-                char version[128] = "";
-                char publisher[256] = "";
-                char installPath[512] = "";
-
-                size = sizeof(version);
-                RegQueryValueExA(hSubKey, "DisplayVersion", nullptr, nullptr, (LPBYTE)version, &size);
-
-                size = sizeof(publisher);
-                RegQueryValueExA(hSubKey, "Publisher", nullptr, nullptr, (LPBYTE)publisher, &size);
-
-                size = sizeof(installPath);
-                RegQueryValueExA(hSubKey, "InstallLocation", nullptr, nullptr, (LPBYTE)installPath, &size);
-
-                std::cout << "Application:\n";
-                std::cout << "  Name: " << displayName << "\n";
-                if (*version) std::cout << "  Version: " << version << "\n";
-                if (*publisher) std::cout << "  Publisher: " << publisher << "\n";
-                if (*installPath) std::cout << "  Path: " << installPath << "\n";
-                std::cout << "-----------------------------\n";
-            }
-
-            RegCloseKey(hSubKey);
-        }
-
-        index++;
-        subKeySize = 256;
+        readUninstallKey(HKEY_USERS, path, "PerUser", user, builder);
     }
 
-    RegCloseKey(hKey);
+    RegCloseKey(hUsers);
 }
 
-void enumerateInstalledApplications() {
-    readUninstallKey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
-    readUninstallKey("Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
-    
-    //Need to check for this path but for all the user /+ mention wich user
-    readUninstallKeyCurrentUser("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
-    
-    //need to add HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall
-    //need to add Microsoft Store (UWP / MSIX) apps using powershell Get-AppxPackage
-    // Drivers and kernel components: HKLM\SYSTEM\CurrentControlSet\Services
-    // Services installed manually
-    // Scheduled-task–based persistence Software launched via: Task Scheduler, startup folder, Registry Run keys -> None require uninstall registration.
-    // MSI edge cases : Some MSI packages:Suppress ARP entries Use ARPSYSTEMCOMPONENT=1 Result: installed, but hidden.
+void enumerateInstalledApplications(JsonBuilder& builder) {
+    readUninstallKey(
+        HKEY_LOCAL_MACHINE,
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+        "System",
+        "",
+        builder);
 
+    readUninstallKey(
+        HKEY_LOCAL_MACHINE,
+        "Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+        "System32",
+        "",
+        builder);
+
+    enumeratePerUser(builder);
 }
+
+
+
+//need to add HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall
+//need to add Microsoft Store (UWP / MSIX) apps using powershell Get-AppxPackage
+// Drivers and kernel components: HKLM\SYSTEM\CurrentControlSet\Services
+// Services installed manually
+// Scheduled-task–based persistence Software launched via: Task Scheduler, startup folder, Registry Run keys -> None require uninstall registration.
+// MSI edge cases : Some MSI packages:Suppress ARP entries Use ARPSYSTEMCOMPONENT=1 Result: installed, but hidden.

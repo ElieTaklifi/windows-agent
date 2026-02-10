@@ -1,4 +1,4 @@
 #pragma once
-#include <string>
+#include "json_builder.h"
 
-void enumerateInstalledApplications();
+void enumerateInstalledApplications(JsonBuilder& builder);

@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(windows_agent
     src/main.cpp
     src/inventory.cpp
+    src/json_builder.cpp
 )
 
 target_link_libraries(windows_agent
