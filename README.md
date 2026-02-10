@@ -1,106 +1,59 @@
-# Windows Endpoint Inventory Agent (C/C++)
+# MABAT — Windows Endpoint Visibility Agent
 
-## Overview
+**MABAT (Machine Asset Baseline Analysis & Telemetry)** is a lightweight Windows endpoint inventory agent written in C/C++.
+It focuses on **what is actually present on a system**, not just what Windows claims is installed.
 
-This project is a **low-level Windows endpoint inventory agent** written in **C/C++**, designed to enumerate **all software execution and persistence mechanisms** on a Windows system — not only what is *installed*, but also what is *present*, *hidden*, or *persisted*.
-
-The goal is to build an **agent-grade inventory engine** similar in philosophy to EDR / asset-management agents, but:
-
-* Fully transparent
-* Locally executable
-* Registry- and filesystem-driven
-* No external dependencies
-* Designed for future network reporting
-
-This project deliberately avoids high-level frameworks and focuses on **Windows internals**.
+MABAT is designed for engineers who want **clear, low-level visibility** into software and persistence mechanisms without relying on heavy frameworks, background services, or opaque tooling.
 
 ---
 
-## What This Project Does (Global Vision)
+## What MABAT Does
 
-The agent builds a **complete software inventory** across multiple domains:
+MABAT scans a Windows system and builds a structured inventory of software and execution-related components.
 
-### 1. Installed Applications (Declared)
+It covers:
 
-* Machine-wide software (HKLM)
-* 32-bit software on 64-bit systems (WOW6432Node)
-* Per-user installed software (HKU for all users)
+* Installed applications (system-wide, 32-bit on 64-bit systems, and per-user)
+* Software that runs without an installer (portable or manually deployed tools)
+* Microsoft Store applications (UWP / MSIX)
+* Drivers and kernel components
+* Manually registered services
+* Scheduled tasks used for execution or persistence
+* MSI packages hidden from Add/Remove Programs
 
-### 2. Portable / Standalone Software (Observed)
-
-* Tools unpacked manually
-* No installer, no registry, no uninstall entry
-* Examples:
-
-  * NirSoft utilities
-  * Admin / red-team tools
-  * ZIP-deployed developer tools
-
-### 3. Microsoft Store (UWP / MSIX) Applications
-
-* Store-managed packages
-* Per-user scoped
-* Installed under WindowsApps
-
-### 4. Drivers and Kernel Components
-
-* Kernel-mode and filesystem drivers
-* Boot / system-start components
-
-### 5. Manually Installed Services
-
-* Services registered directly via `sc.exe` or APIs
-* Often backed by custom executables
-
-### 6. Scheduled-Task–Based Persistence
-
-* Tasks executing binaries or scripts
-* Often used for stealthy persistence
-
-### 7. Hidden MSI Packages (ARP Suppressed)
-
-* MSI packages installed with `ARPSYSTEMCOMPONENT=1`
-* Present in MSI database but hidden from Add/Remove Programs
-
-All collected data is serialized into **JSON**, intended for:
-
-* Local inspection
-* Future web UI
-* Future network transport (API / agent-server model)
+The result is a **JSON inventory file** that can be reviewed locally or used later for reporting, comparison, or aggregation.
 
 ---
 
-## Current Project Status
+## Why MABAT
 
-### ✅ Implemented
+Most inventory tools only see what installers declare.
+MABAT looks at **real system artifacts**: registry entries, filesystem locations, and native Windows APIs.
 
-* CMake-based build system
-* Registry-based enumeration of installed software:
+The project is guided by a few simple principles:
 
-  * HKLM
-  * WOW6432Node
-  * HKU (all users)
-* Clean JSON output via a dedicated JSON builder module
+* See the system as it is, not as it reports itself
+* Make no assumptions when data is missing
+* Keep enumeration deterministic and transparent
+* Avoid execution, injection, or system changes
 
-### 🟡 In Design / Next
+MABAT is visibility-only by design.
 
-* Portable filesystem-based software detection
-* Microsoft Store (UWP / MSIX) enumeration
-* Driver and service inventory
+---
 
-### ⏳ Planned (Later Steps)
+## How It’s Built
 
-* Scheduled task parsing
-* Hidden MSI inventory
-* Runtime correlation (processes, execution evidence)
-* Optional network reporting
+MABAT is written in plain C/C++ and targets Windows 10 and 11.
+It uses a simple CMake-based build and depends only on the Windows SDK.
+
+Internally, enumeration logic, data modeling, and JSON output are kept separate to make the code easy to understand and extend.
 
 ---
 
 ## Project Structure
 
 ```text
-windows-agent/
+mabat/
 ├── src/
 │   ├── main.cpp
 │   ├── inventory.cpp
@@ -112,66 +65,68 @@ windows-agent/
 ├── CMakeLists.txt
 ├── README.md
 ├── .gitignore
-└── inventory.json   (runtime output)
+└── inventory.json
 ```
 
 ---
 
-## Design Principles
+## Build and Run
 
-* **No assumptions**: absence of data is valid data
-* **Best-effort visibility**: do not guess unless explicitly designed to
-* **Separation of concerns**:
+### Requirements
 
-  * Enumeration logic
-  * Data model
-  * Serialization
-* **Safe by default**: no execution, no injection, no hooking
-
----
-
-## Build Requirements
-
-* Windows 10 / 11
+* Windows 10 or 11
 * Visual Studio 2022 (MSVC v143)
 * Windows SDK
 * CMake
 
-Build commands:
+### Build
 
 ```powershell
 cmake -S . -B build
 cmake --build build
 ```
 
-Run:
+### Run
 
 ```powershell
-.\build\Debug\windows_agent.exe
+.\build\Debug\mabat-agent.exe
 ```
+
+After execution, MABAT generates a JSON inventory file in the working directory.
 
 ---
 
-## Roadmap (High Level)
+## Roadmap
 
-1. Portable filesystem scanning
-2. UWP / MSIX inventory
-3. Drivers and kernel components
-4. Manual services
-5. Scheduled task persistence
-6. Hidden MSI detection
-7. Runtime correlation (processes)
-8. Network reporting layer
+Planned next steps include:
+
+* Filesystem-based detection of portable software
+* Microsoft Store (UWP / MSIX) inventory
+* Driver and manual service enumeration
+* Scheduled task analysis
+* Hidden MSI detection
+* Optional network reporting
+
+---
+
+## What MABAT Is Not
+
+* Not an EDR
+* Not an antivirus
+* Not a monitoring or enforcement tool
+* Not intrusive
+
+MABAT does not execute discovered binaries, hook APIs, inject code, or modify the system.
 
 ---
 
 ## Disclaimer
 
-This project is for **educational, defensive, and asset-management purposes**.
-It does **not exploit**, **inject**, or **modify** system state.
+This project is intended for defensive security research, asset management, and learning Windows internals.
+It performs no exploitation, enforcement, or active response.
 
 ---
 
 ## Author
 
-Developed as a low-level Windows internals learning and research project.
+Built by myself as a Windows internals and endpoint visibility research project.
