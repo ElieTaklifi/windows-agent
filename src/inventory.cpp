@@ -1,26 +1,64 @@
 #include "inventory.h"
+
 #include <windows.h>
-#include <sddl.h>
 #include <lmcons.h>
+#include <sddl.h>
+
+#include <string>
 
 static std::string sidToUsername(const std::string& sid) {
     PSID pSid = nullptr;
     if (!ConvertStringSidToSidA(sid.c_str(), &pSid))
         return "";
 
-    char name[UNLEN + 1];
-    char domain[UNLEN + 1];
+    char name[UNLEN + 1] = {};
+    char domain[UNLEN + 1] = {};
     DWORD nameLen = UNLEN + 1;
     DWORD domainLen = UNLEN + 1;
     SID_NAME_USE use;
 
     std::string result;
-
-    if (LookupAccountSidA(nullptr, pSid, name, &nameLen, domain, &domainLen, &use))
+    if (LookupAccountSidA(nullptr, pSid, name, &nameLen, domain, &domainLen, &use)) {
         result = std::string(domain) + "\\" + name;
+    }
 
     LocalFree(pSid);
     return result;
+}
+
+static bool readStringValue(HKEY key, const char* valueName, std::string& outValue) {
+    outValue.clear();
+
+    DWORD type = 0;
+    DWORD size = 0;
+    LONG status = RegQueryValueExA(key, valueName, nullptr, &type, nullptr, &size);
+    if (status != ERROR_SUCCESS || size == 0)
+        return false;
+
+    if (type != REG_SZ && type != REG_EXPAND_SZ)
+        return false;
+
+    std::string buffer(size, '\0');
+    status = RegQueryValueExA(
+        key,
+        valueName,
+        nullptr,
+        nullptr,
+        reinterpret_cast<LPBYTE>(&buffer[0]),
+        &size);
+
+    if (status != ERROR_SUCCESS)
+        return false;
+
+    if (!buffer.empty() && buffer.back() == '\0')
+        buffer.pop_back();
+
+    outValue = buffer;
+    return true;
+}
+
+static std::string makeRegistryPath(const std::string& basePath, const std::string& leaf) {
+    return basePath + "\\" + leaf;
 }
 
 static void readUninstallKey(
@@ -28,8 +66,7 @@ static void readUninstallKey(
     const std::string& subPath,
     const std::string& scope,
     const std::string& user,
-    JsonBuilder& builder)
-{
+    JsonBuilder& builder) {
     HKEY hKey;
     if (RegOpenKeyExA(root, subPath.c_str(), 0, KEY_READ, &hKey) != ERROR_SUCCESS)
         return;
@@ -39,52 +76,52 @@ static void readUninstallKey(
 
     while (true) {
         DWORD subKeySize = sizeof(subKeyName);
-        if (RegEnumKeyExA(hKey, index++, subKeyName, &subKeySize,
-                          nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+        LONG enumStatus = RegEnumKeyExA(
+            hKey,
+            index++,
+            subKeyName,
+            &subKeySize,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr);
+
+        if (enumStatus != ERROR_SUCCESS)
             break;
 
         HKEY hSubKey;
         if (RegOpenKeyExA(hKey, subKeyName, 0, KEY_READ, &hSubKey) != ERROR_SUCCESS)
             continue;
 
-        char name[512];
-        DWORD size = sizeof(name);
-
-        if (RegQueryValueExA(hSubKey, "DisplayName", nullptr, nullptr,
-                             (LPBYTE)name, &size) == ERROR_SUCCESS) {
-
-            ApplicationRecord app;
-            app.scope = scope;
-            app.user = user;
-            app.name = name;
-
-            char buffer[512];
-
-            size = sizeof(buffer);
-            if (RegQueryValueExA(hSubKey, "DisplayVersion", nullptr, nullptr,
-                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
-                app.version = buffer;
-
-            size = sizeof(buffer);
-            if (RegQueryValueExA(hSubKey, "Publisher", nullptr, nullptr,
-                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
-                app.publisher = buffer;
-
-            size = sizeof(buffer);
-            if (RegQueryValueExA(hSubKey, "InstallLocation", nullptr, nullptr,
-                                 (LPBYTE)buffer, &size) == ERROR_SUCCESS)
-                app.installPath = buffer;
-
-            builder.addApplication(app);
+        ApplicationRecord app;
+        if (!readStringValue(hSubKey, "DisplayName", app.name)) {
+            RegCloseKey(hSubKey);
+            continue;
         }
 
+        app.type = "installed";
+        app.scope = scope;
+        app.user = user;
+
+        readStringValue(hSubKey, "DisplayVersion", app.version);
+        readStringValue(hSubKey, "Publisher", app.publisher);
+
+        if (!readStringValue(hSubKey, "InstallLocation", app.installPath)) {
+            // Fallback for entries that do not expose InstallLocation.
+            readStringValue(hSubKey, "InstallSource", app.installPath);
+        }
+
+        app.source.type = "registry";
+        app.source.location = makeRegistryPath(subPath, subKeyName);
+
+        builder.addApplication(app);
         RegCloseKey(hSubKey);
     }
 
     RegCloseKey(hKey);
 }
 
-static void enumeratePerUser(JsonBuilder& builder) {
+static void enumeratePerUserInstalled(JsonBuilder& builder) {
     HKEY hUsers;
     if (RegOpenKeyExA(HKEY_USERS, nullptr, 0, KEY_READ, &hUsers) != ERROR_SUCCESS)
         return;
@@ -94,16 +131,26 @@ static void enumeratePerUser(JsonBuilder& builder) {
 
     while (true) {
         DWORD sidSize = sizeof(sid);
-        if (RegEnumKeyExA(hUsers, index++, sid, &sidSize,
-                          nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+        LONG enumStatus = RegEnumKeyExA(
+            hUsers,
+            index++,
+            sid,
+            &sidSize,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr);
+
+        if (enumStatus != ERROR_SUCCESS)
             break;
 
-        if (strncmp(sid, "S-1-5-", 6) != 0)
+        // Skip synthetic and classes branches.
+        if (strncmp(sid, "S-1-5-", 6) != 0 || strstr(sid, "_Classes") != nullptr)
             continue;
 
         std::string user = sidToUsername(sid);
         if (user.empty())
-            continue;
+            user = sid;
 
         std::string path = std::string(sid) +
             "\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall";
@@ -118,24 +165,80 @@ void enumerateInstalledApplications(JsonBuilder& builder) {
     readUninstallKey(
         HKEY_LOCAL_MACHINE,
         "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
-        "System",
-        "",
+        "Machine",
+        "SYSTEM",
         builder);
 
     readUninstallKey(
         HKEY_LOCAL_MACHINE,
         "Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
-        "System32",
-        "",
+        "Machine",
+        "SYSTEM",
         builder);
 
-    enumeratePerUser(builder);
+    enumeratePerUserInstalled(builder);
 }
 
+void enumerateUwpPackages(JsonBuilder& builder) {
+    constexpr const char* kUwpBasePath =
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Applications";
 
-//need to add HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall
-//need to add Microsoft Store (UWP / MSIX) apps using powershell Get-AppxPackage
-// Drivers and kernel components: HKLM\SYSTEM\CurrentControlSet\Services
-// Services installed manually
-// Scheduled-task–based persistence Software launched via: Task Scheduler, startup folder, Registry Run keys -> None require uninstall registration.
-// MSI edge cases : Some MSI packages:Suppress ARP entries Use ARPSYSTEMCOMPONENT=1 Result: installed, but hidden.
+    HKEY hApplications;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, kUwpBasePath, 0, KEY_READ, &hApplications) != ERROR_SUCCESS)
+        return;
+
+    char subKeyName[512];
+    DWORD index = 0;
+
+    while (true) {
+        DWORD subKeySize = sizeof(subKeyName);
+        LONG enumStatus = RegEnumKeyExA(
+            hApplications,
+            index++,
+            subKeyName,
+            &subKeySize,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr);
+
+        if (enumStatus != ERROR_SUCCESS)
+            break;
+
+        HKEY hPackage;
+        if (RegOpenKeyExA(hApplications, subKeyName, 0, KEY_READ, &hPackage) != ERROR_SUCCESS)
+            continue;
+
+        ApplicationRecord app;
+        app.type = "uwp";
+        app.scope = "Machine";
+        app.user = "SYSTEM";
+        app.name = subKeyName;
+
+        // Keep package name deterministic; enrich when metadata exists.
+        std::string value;
+        if (readStringValue(hPackage, "DisplayName", value) && !value.empty())
+            app.name = value;
+
+        readStringValue(hPackage, "Version", app.version);
+
+        if (!readStringValue(hPackage, "Publisher", app.publisher))
+            readStringValue(hPackage, "PublisherDisplayName", app.publisher);
+
+        if (!readStringValue(hPackage, "Path", app.installPath))
+            readStringValue(hPackage, "PackageRootFolder", app.installPath);
+
+        if (app.installPath.empty()) {
+            // Best-effort canonical location when package path metadata is unavailable.
+            app.installPath = std::string("C:\\Program Files\\WindowsApps\\") + subKeyName;
+        }
+
+        app.source.type = "registry";
+        app.source.location = makeRegistryPath(kUwpBasePath, subKeyName);
+
+        builder.addApplication(app);
+        RegCloseKey(hPackage);
+    }
+
+    RegCloseKey(hApplications);
+}
