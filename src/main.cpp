@@ -3,6 +3,7 @@
 #include "inventory.h"
 #include "json_builder.h"
 #include "portable_scanner.h"
+#include "uwp_scanner.h"
 
 int main() {
     JsonBuilder builder;

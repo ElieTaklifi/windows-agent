@@ -10,6 +10,7 @@ add_executable(windows_agent
     src/inventory.cpp
     src/json_builder.cpp
     src/portable_scanner.cpp
+    src/uwp_scanner.cpp
 )
 
 target_link_libraries(windows_agent
