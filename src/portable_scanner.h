@@ -14,4 +14,5 @@ private:
     );
 
     static bool isExecutable(const std::wstring& filename);
+    static std::string toUtf8(const std::wstring& w);
 };

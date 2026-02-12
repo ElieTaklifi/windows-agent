@@ -1,5 +1,6 @@
 #include "portable_scanner.h"
 #include <windows.h>
+#include <string>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -23,6 +24,7 @@ void PortableScanner::scanDirectory(
     const std::wstring& userName,
     JsonBuilder& json
 ) {
+    std::string appBasePath;
     try {
         if (!fs::exists(basePath))
             return;
@@ -41,14 +43,15 @@ void PortableScanner::scanDirectory(
             ApplicationRecord app;
             app.type = "portable";
             app.scope = "Observed";
-            app.user = std::string(userName.begin(), userName.end());
+            app.user = toUtf8(userName);
             app.name = path.filename().string();
             app.version = "";
             app.publisher = "";
             app.installPath = path.string();
             
             app.source.type = "filesystem";
-            app.source.location = basePath;
+            appBasePath = toUtf8(basePath);
+            app.source.location = appBasePath;
 
             json.addApplication(app);
         }
@@ -75,4 +78,16 @@ void PortableScanner::scan(JsonBuilder& json) {
         scanDirectory(userDir.path().wstring() + L"\\Downloads", userName, json);
         scanDirectory(userDir.path().wstring() + L"\\Desktop", userName, json);
     }
+}
+
+std::string PortableScanner::toUtf8(const std::wstring& w)
+{
+    int size = WideCharToMultiByte(
+        CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
+
+    std::string result(size - 1, '\0');
+    WideCharToMultiByte(
+        CP_UTF8, 0, w.c_str(), -1, result.data(), size, nullptr, nullptr);
+
+    return result;
 }
