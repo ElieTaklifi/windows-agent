@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Execution Surface Security Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Execution Surface Security Dashboard</h1>
+    <p>Analyze discovered software surfaces from <code>inventory.json</code></p>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls">
+      <div class="control-row">
+        <label for="jsonFile">Load inventory JSON</label>
+        <input id="jsonFile" type="file" accept="application/json" />
+      </div>
+      <div class="control-row">
+        <label for="searchInput">Search</label>
+        <input id="searchInput" type="text" placeholder="Name, metadata, path..." />
+      </div>
+      <div class="control-grid">
+        <div>
+          <label for="typeFilter">Type</label>
+          <select id="typeFilter"><option value="all">All</option></select>
+        </div>
+        <div>
+          <label for="sourceFilter">Source</label>
+          <select id="sourceFilter"><option value="all">All</option></select>
+        </div>
+        <div>
+          <label for="scopeFilter">Scope</label>
+          <select id="scopeFilter"><option value="all">All</option></select>
+        </div>
+        <div>
+          <label for="riskFilter">Risk</label>
+          <select id="riskFilter">
+            <option value="all">All</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards" id="statsCards"></section>
+
+    <section class="panel dashboard">
+      <h2>Risk Overview</h2>
+      <div id="riskBars" class="bars"></div>
+    </section>
+
+    <section class="panel table-wrap">
+      <h2>Discovered Surfaces</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Scope</th>
+            <th>Risk</th>
+            <th>Path</th>
+          </tr>
+        </thead>
+        <tbody id="entriesBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

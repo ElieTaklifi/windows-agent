@@ -1,0 +1,96 @@
+:root {
+  --bg: #0e1320;
+  --panel: #151d2f;
+  --text: #e6edf7;
+  --muted: #90a0ba;
+  --accent: #4ba3ff;
+  --high: #ff5a6f;
+  --medium: #ffb648;
+  --low: #3cd38f;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #1a2540, var(--bg));
+}
+
+.topbar {
+  padding: 20px 24px;
+  border-bottom: 1px solid #22304f;
+}
+.topbar h1 { margin: 0 0 6px 0; font-size: 1.4rem; }
+.topbar p { margin: 0; color: var(--muted); }
+
+.layout {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid #243557;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.controls .control-row,
+.controls .control-grid > div { display: flex; flex-direction: column; gap: 8px; }
+.control-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-top: 12px; }
+
+input, select {
+  background: #0f182b;
+  border: 1px solid #2f426c;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.card {
+  background: var(--panel);
+  border: 1px solid #243557;
+  border-radius: 12px;
+  padding: 14px;
+}
+.card .label { color: var(--muted); font-size: 0.82rem; }
+.card .value { font-size: 1.6rem; margin-top: 6px; }
+
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; gap: 8px; }
+.bar-track { background: #0f182b; border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 10px; }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-bottom: 1px solid #2b3c61;
+  padding: 10px;
+}
+tbody td {
+  border-bottom: 1px solid #1f2d49;
+  padding: 10px;
+  font-size: 0.92rem;
+}
+.risk-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.risk-high { background: rgba(255, 90, 111, .15); color: var(--high); }
+.risk-medium { background: rgba(255, 182, 72, .15); color: var(--medium); }
+.risk-low { background: rgba(60, 211, 143, .15); color: var(--low); }
+
+@media (max-width: 780px) {
+  .table-wrap { overflow-x: auto; }
+}
