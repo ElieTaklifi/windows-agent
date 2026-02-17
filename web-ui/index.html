@@ -4,74 +4,203 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Execution Surface Security Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>Execution Surface Security Dashboard</h1>
-    <p>Analyze discovered software surfaces from <code>inventory.json</code></p>
-  </header>
 
-  <main class="layout">
-    <section class="panel controls">
-      <div class="control-row">
-        <label for="jsonFile">Load inventory JSON</label>
-        <input id="jsonFile" type="file" accept="application/json" />
+<!-- ══════════════════════════════════════════
+     Topbar
+══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <h1>Surface Scanner</h1>
+  </div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-status">
+    <div class="status-dot"></div>
+    <span id="statusText">No inventory loaded</span>
+  </div>
+  <div class="topbar-actions">
+    <label class="load-btn">
+      &#8679; Load inventory.json
+      <input id="jsonFile" type="file" accept="application/json" />
+    </label>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     Navigation tabs
+══════════════════════════════════════════ -->
+<nav class="nav-tabs">
+  <div class="nav-tab active" data-view="dashboard">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
+      <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+    </svg>
+    Dashboard
+  </div>
+  <div class="nav-tab" data-view="inventory">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/>
+    </svg>
+    Inventory
+    <span class="tab-count" id="tabCount">0</span>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     Main content
+══════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── Dashboard View ── -->
+  <div class="view active" id="view-dashboard">
+
+    <!-- Stat cards row -->
+    <div class="cards-grid" id="statsCards"></div>
+
+    <!-- Charts row 1: donut + risk bars -->
+    <div class="charts-row">
+
+      <div class="panel">
+        <div class="panel-title">Risk Distribution</div>
+        <div class="donut-wrap">
+          <div class="donut-chart">
+            <svg width="130" height="130" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="18"/>
+              <circle id="donut-high"   cx="65" cy="65" r="50" fill="none" stroke="var(--high)"   stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-medium" cx="65" cy="65" r="50" fill="none" stroke="var(--medium)" stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-low"    cx="65" cy="65" r="50" fill="none" stroke="var(--low)"    stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-total" id="donutTotal">0</div>
+              <div class="donut-sub">Total</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
       </div>
-      <div class="control-row">
+
+      <div class="panel">
+        <div class="panel-title">Risk Breakdown</div>
+        <div class="risk-bars" id="riskBars"></div>
+      </div>
+
+    </div>
+
+    <!-- Charts row 2: source breakdown + top publishers -->
+    <div class="charts-row">
+
+      <div class="panel">
+        <div class="panel-title">By Source</div>
+        <div class="source-bars" id="sourceBars"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Top Publishers</div>
+        <div class="pub-list" id="pubList"></div>
+      </div>
+
+    </div>
+
+  </div><!-- /view-dashboard -->
+
+  <!-- ── Inventory View ── -->
+  <div class="view" id="view-inventory">
+
+    <!-- Filter controls -->
+    <div class="controls-bar">
+      <div class="ctrl-group">
         <label for="searchInput">Search</label>
-        <input id="searchInput" type="text" placeholder="Name, metadata, path..." />
+        <input id="searchInput" type="text" placeholder="Name, publisher, path, metadata…" />
       </div>
-      <div class="control-grid">
-        <div>
-          <label for="typeFilter">Type</label>
-          <select id="typeFilter"><option value="all">All</option></select>
-        </div>
-        <div>
-          <label for="sourceFilter">Source</label>
-          <select id="sourceFilter"><option value="all">All</option></select>
-        </div>
-        <div>
-          <label for="scopeFilter">Scope</label>
-          <select id="scopeFilter"><option value="all">All</option></select>
-        </div>
-        <div>
-          <label for="riskFilter">Risk</label>
-          <select id="riskFilter">
-            <option value="all">All</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+      <div class="ctrl-group">
+        <label for="typeFilter">Type</label>
+        <select id="typeFilter"><option value="all">All Types</option></select>
+      </div>
+      <div class="ctrl-group">
+        <label for="sourceFilter">Source</label>
+        <select id="sourceFilter"><option value="all">All Sources</option></select>
+      </div>
+      <div class="ctrl-group">
+        <label for="scopeFilter">Scope</label>
+        <select id="scopeFilter"><option value="all">All Scopes</option></select>
+      </div>
+      <div class="ctrl-group">
+        <label for="publisherFilter">Publisher</label>
+        <select id="publisherFilter"><option value="all">All Publishers</option></select>
+      </div>
+      <div class="ctrl-group">
+        <label for="riskFilter">Risk</label>
+        <select id="riskFilter">
+          <option value="all">All Risks</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Inventory table -->
+    <div class="panel" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Source</th>
+              <th>Scope</th>
+              <th>Publisher</th>
+              <th>Risk</th>
+              <th>Path</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <p>No entries match current filters</p>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="cards" id="statsCards"></section>
+  </div><!-- /view-inventory -->
 
-    <section class="panel dashboard">
-      <h2>Risk Overview</h2>
-      <div id="riskBars" class="bars"></div>
-    </section>
+</main>
 
-    <section class="panel table-wrap">
-      <h2>Discovered Surfaces</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Source</th>
-            <th>Scope</th>
-            <th>Risk</th>
-            <th>Path</th>
-          </tr>
-        </thead>
-        <tbody id="entriesBody"></tbody>
-      </table>
-    </section>
-  </main>
+<!-- ══════════════════════════════════════════
+     Uninstall confirmation modal
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--high)" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+      </svg>
+    </div>
+    <h3>Confirm Uninstall</h3>
+    <p>You are about to initiate an uninstall request for:</p>
+    <div class="modal-pkg" id="modalPkgName">—</div>
+    <p>The agent will execute the registered uninstall command on the endpoint. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">Cancel</button>
+      <button class="btn-confirm" id="modalConfirm">Uninstall</button>
+    </div>
+  </div>
+</div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
