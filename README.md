@@ -1,133 +1,143 @@
-# MABAT — Windows Endpoint Visibility Agent
+# MABAT — Machine Asset Baseline Analysis & Telemetry
 
-**MABAT (Machine Asset Baseline Analysis & Telemetry)** is a lightweight Windows endpoint inventory agent written in C/C++.
-It focuses on **what is actually present on a system**, not just what Windows claims is installed.
+MABAT is a lightweight Windows endpoint visibility agent focused on one thing: **building a clear, evidence-based inventory of what is actually present on a machine**.
 
-MABAT is designed for engineers who want **clear, low-level visibility** into software and persistence mechanisms without relying on heavy frameworks, background services, or opaque tooling.
+Instead of trusting only installer databases, MABAT pulls telemetry from multiple system surfaces (registry, startup mechanisms, filesystem footprints, OS catalog views) and exports a normalized JSON inventory that teams can inspect, compare, and feed into other tooling.
 
 ---
 
 ## What MABAT Does
 
-MABAT scans a Windows system and builds a structured inventory of software and execution-related components.
+MABAT discovers software and execution surfaces from real host artifacts and emits a machine-readable inventory (`inventory.json`).
 
-It covers:
-
-* Installed applications (system-wide, 32-bit on 64-bit systems, and per-user)
-* Software that runs without an installer (portable or manually deployed tools)
-* Microsoft Store applications (UWP / MSIX)
-* Drivers and kernel components
-* Manually registered services
-* Scheduled tasks used for execution or persistence
-* MSI packages hidden from Add/Remove Programs
-
-The result is a **JSON inventory file** that can be reviewed locally or used later for reporting, comparison, or aggregation.
-
----
+In practice, this helps you:
+- Understand what is installed per-machine and per-user.
+- Identify software discovered outside classic installer paths.
+- Surface common autorun and persistence clues.
+- Build a baseline you can diff over time.
 
 ## Why MABAT
 
-Most inventory tools only see what installers declare.
-MABAT looks at **real system artifacts**: registry entries, filesystem locations, and native Windows APIs.
+Most inventory pipelines answer: _“What was officially installed?”_
 
-The project is guided by a few simple principles:
+MABAT is built to answer: _“What is actually there right now?”_
 
-* See the system as it is, not as it reports itself
-* Make no assumptions when data is missing
-* Keep enumeration deterministic and transparent
-* Avoid execution, injection, or system changes
+It is designed for security engineers, IT operations, incident responders, and researchers who want:
+- Deterministic collection behavior.
+- Transparent scanner logic.
+- Minimal dependencies.
+- Output that is easy to validate and integrate.
 
-MABAT is visibility-only by design.
+## What MABAT Is Not
+
+MABAT is **not**:
+- An EDR platform.
+- An antivirus engine.
+- A runtime monitor.
+- A remediation/enforcement agent.
+
+It does not inject, hook, block, or remove software. It is a **visibility-first** collector.
 
 ---
 
-## How It’s Built
+## Technical Overview
 
-MABAT is written in plain C/C++ and targets Windows 10 and 11.
-It uses a simple CMake-based build and depends only on the Windows SDK.
-
-Internally, enumeration logic, data modeling, and JSON output are kept separate to make the code easy to understand and extend.
-
----
-
-## Project Structure
+### Project Structure
 
 ```text
-mabat/
+mabat-agent/
 ├── src/
-│   ├── main.cpp
-│   ├── inventory.cpp
-│   ├── inventory.h
-│   ├── json_builder.cpp
-│   ├── json_builder.h
-|   ├── portable_scanner.h
-│   └── portable_scanner.cpp
-│
+│   ├── main.cpp                    # scanner orchestration + inventory export
+│   ├── software_entry.h            # raw/normalized entry data model
+│   ├── scanners/
+│   │   ├── idiscovery_scanner.h    # scanner interface
+│   │   ├── registry_scanner.*      # uninstall + MSI/UserData enumeration
+│   │   ├── autorun_scanner.*       # Run/RunOnce autorun key discovery
+│   │   ├── filesystem_scanner.*    # executable discovery in Program Files
+│   │   ├── os_catalog_scanner.*    # AppX/UWP catalog enumeration
+│   │   └── persistence_scanner.*   # startup/persistence surface enumeration
+│   └── helper/
+│       ├── normalizer.*            # deduplication + field normalization
+│       └── json_exporter.*         # inventory.json serialization
+├── web-ui/                         # optional local dashboard for inventory.json
+├── examples/example_output.json
 ├── CMakeLists.txt
-├── README.md
-├── .gitignore
-└── inventory.json
+└── README.md
 ```
+
+### Scanner Responsibilities (Short)
+
+- **RegistryScanner**  
+  Enumerates software from uninstall registry roots (machine + per-user + WOW6432Node) and MSI UserData install properties.
+
+- **AutoRunScanner**  
+  Enumerates common autorun registry keys (`Run`, `RunOnce`, `RunOnceEx`) for machine and loaded user hives.
+
+- **FilesystemScanner**  
+  Walks `C:/Program Files` and `C:/Program Files (x86)` to discover executable artifacts (`.exe`) that may indicate portable/manual deployments.
+
+- **OSCatalogScanner**  
+  Enumerates AppX/UWP package entries from the Windows AppxAllUserStore registry catalog.
+
+- **PersistenceScanner**  
+  Enumerates selected persistence surfaces (Run keys and Startup folder artifacts).
+
+> Note: The current `main.cpp` scan pipeline enables `RegistryScanner` and `AutoRunScanner` by default; additional scanners are present in the codebase and can be enabled in the scanner list.
 
 ---
 
-## Build and Run
+## Build & Run
 
 ### Requirements
 
-* Windows 10 or 11
-* Visual Studio 2022 (MSVC v143)
-* Windows SDK
-* CMake
+- Windows 10 or 11
+- CMake 3.21+
+- Visual Studio 2022 Build Tools (MSVC)
+- Windows SDK
 
 ### Build
 
 ```powershell
 cmake -S . -B build
-cmake --build build
+cmake --build build --config Debug
 ```
 
 ### Run
 
 ```powershell
-.\build\Debug\mabat-agent.exe
+.\build\Debug\windows_agent.exe
 ```
 
-After execution, MABAT generates a JSON inventory file in the working directory.
+On success, MABAT writes `inventory.json` to the working directory.
+
+### Optional: Open the Dashboard
+
+You can inspect exported results with the local UI:
+
+```powershell
+start .\web-ui\index.html
+```
+
+Then load `inventory.json` from the page.
 
 ---
 
 ## Roadmap
 
-Planned next steps include:
-
-* Filesystem-based detection of portable software
-* Microsoft Store (UWP / MSIX) inventory
-* Driver and manual service enumeration
-* Scheduled task analysis
-* Hidden MSI detection
-* Optional network reporting
-
----
-
-## What MABAT Is Not
-
-* Not an EDR
-* Not an antivirus
-* Not a monitoring or enforcement tool
-* Not intrusive
-
-MABAT does not execute discovered binaries, hook APIs, inject code, or modify the system.
+- Stabilize and finalize all scanner implementations behind a configurable pipeline.
+- Add robust offline user hive support for non-loaded profiles.
+- Expand persistence coverage (services, tasks, WMI, drivers) with stronger context metadata.
+- Add richer normalization (publisher canonicalization, version unification, confidence scoring).
+- Add optional output modes (stdout, custom path, split by source, diff mode).
+- Improve test coverage (unit tests for normalization and scanner fixtures).
+- Add optional remote transport for fleet aggregation.
 
 ---
 
 ## Disclaimer
 
-This project is intended for defensive security research, asset management, and learning Windows internals.
-It performs no exploitation, enforcement, or active response.
-
----
+MABAT is provided for defensive security operations, asset visibility, and research purposes. Use it only in environments where you are authorized to collect endpoint inventory data. The project is visibility-oriented and intentionally avoids active response behavior.
 
 ## Author
 
-Built by myself as a Windows internals and endpoint visibility research project.
+Created and maintained as a Windows endpoint visibility and internals exploration project.
