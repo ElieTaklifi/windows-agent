@@ -9,6 +9,7 @@ const fallbackData = {
   entries: [
     {
       name: "Contoso Agent", type: "Win32", source: "registry",
+      explanation: "Found in uninstall registry keys; indicates installed software with standard registration and likely regular execution footprint.",
       scope: "per-machine", userSID: "N/A",
       metadata: {
         path: "C:/Program Files/Contoso/agent.exe",
@@ -20,6 +21,7 @@ const fallbackData = {
     },
     {
       name: "Tailspin.App", type: "UWP", source: "os_catalog",
+      explanation: "Found in Windows AppX catalog; indicates packaged UWP app presence that can execute in user context.",
       scope: "per-machine", userSID: "N/A",
       metadata: {
         path: "C:/Program Files/WindowsApps/Tailspin.App",
@@ -29,6 +31,7 @@ const fallbackData = {
     },
     {
       name: "OneDrive", type: "Service", source: "persistence",
+      explanation: "Found in persistence surface (run_key); can auto-start and maintain recurring execution on this host.",
       scope: "per-user", userSID: "S-1-5-21...",
       metadata: {
         path: "C:/Users/user/AppData/Local/Microsoft/OneDrive/OneDrive.exe",
@@ -40,6 +43,7 @@ const fallbackData = {
     },
     {
       name: "7-Zip 22.01", type: "Win32", source: "registry",
+      explanation: "Found in uninstall registry keys; indicates installed software with standard registration and likely regular execution footprint.",
       scope: "per-machine", userSID: "N/A",
       metadata: {
         path: "C:/Program Files/7-Zip",
@@ -50,6 +54,7 @@ const fallbackData = {
     },
     {
       name: "Chrome", type: "Win32", source: "registry",
+      explanation: "Found in uninstall registry keys; indicates installed software with standard registration and likely regular execution footprint.",
       scope: "per-machine", userSID: "N/A",
       metadata: {
         path: "C:/Program Files/Google/Chrome/Application",
@@ -60,6 +65,7 @@ const fallbackData = {
     },
     {
       name: "Slack", type: "Win32", source: "registry",
+      explanation: "Found in uninstall registry keys; indicates installed software with standard registration and likely regular execution footprint.",
       scope: "per-user", userSID: "S-1-5-21...",
       metadata: {
         path: "C:/Users/user/AppData/Local/slack",
@@ -70,6 +76,7 @@ const fallbackData = {
     },
     {
       name: "vcredist_x64", type: "Win32", source: "registry-msi",
+      explanation: "Found in MSI UserData registry records; confirms Windows Installer-managed software and potential machine-wide impact.",
       scope: "per-machine", userSID: "N/A",
       metadata: {
         path: "",
@@ -518,6 +525,7 @@ function renderTable() {
     const risk      = computeRisk(entry);
     const path      = entry.metadata?.path || '-';
     const publisher = getPublisher(entry) || '—';
+    const explanation = entry.explanation || '—';
     const uninstCmd = entry.metadata?.uninstallCmd || '';
 
     const btnHtml = uninstCmd
@@ -539,6 +547,7 @@ function renderTable() {
         <td><span class="badge badge-source">${escHtml(entry.source || '—')}</span></td>
         <td><span class="badge badge-scope">${escHtml(entry.scope  || '—')}</span></td>
         <td><div class="td-mono" title="${escHtml(publisher)}">${escHtml(publisher)}</div></td>
+        <td><div class="td-explanation" title="${escHtml(explanation)}">${escHtml(explanation)}</div></td>
         <td><span class="risk-pill risk-${risk}">${risk}</span></td>
         <td><div class="td-path" title="${escHtml(path)}">${escHtml(path)}</div></td>
         <td>${btnHtml}</td>

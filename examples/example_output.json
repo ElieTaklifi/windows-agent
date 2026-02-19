@@ -12,7 +12,8 @@
         "publisher": "Contoso Ltd",
         "displayVersion": "4.2.1",
         "registryPath": "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ContosoAgent"
-      }
+      },
+      "explanation": "Found in uninstall registry keys; indicates installed software with standard registration and likely regular execution footprint."
     },
     {
       "name": "FabrikamTool",
@@ -23,7 +24,8 @@
       "metadata": {
         "path": "C:\\Program Files\\Fabrikam\\FabrikamTool.exe",
         "extension": ".exe"
-      }
+      },
+      "explanation": "Found by executable file scan in Program Files paths; may indicate manually deployed or portable software that can run directly."
     },
     {
       "name": "Tailspin.App_1.0.0.0_x64__8wekyb3d8bbwe",
@@ -35,7 +37,8 @@
         "path": "C:\\Program Files\\WindowsApps\\Tailspin.App_1.0.0.0_x64__8wekyb3d8bbwe",
         "catalog": "appx",
         "registryPath": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Appx\\AppxAllUserStore\\Applications\\Tailspin.App_1.0.0.0_x64__8wekyb3d8bbwe"
-      }
+      },
+      "explanation": "Found in Windows AppX catalog; indicates packaged UWP app presence that can execute in user context."
     }
   ]
 }

@@ -15,6 +15,7 @@ struct NormalizedSoftwareEntry {
     std::string type;
     std::string scope;
     std::string source;
+    std::string explanation;
     std::string userSID;
     std::map<std::string, std::string> metadata;
 };

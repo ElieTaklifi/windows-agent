@@ -42,6 +42,7 @@ void JsonExporter::exportToFile(const std::vector<NormalizedSoftwareEntry>& entr
         out << "      \"type\": \"" << escapeJson(entry.type) << "\",\n";
         out << "      \"scope\": \"" << escapeJson(entry.scope) << "\",\n";
         out << "      \"source\": \"" << escapeJson(entry.source) << "\",\n";
+        out << "      \"explanation\": \"" << escapeJson(entry.explanation) << "\",\n";
         out << "      \"userSID\": \"" << escapeJson(entry.userSID) << "\",\n";
         out << "      \"metadata\": {\n";
 
