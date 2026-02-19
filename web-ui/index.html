@@ -3,16 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MABAT Dashboard</title>
+  <title>MABAT Hunter — Execution Surface Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     Topbar
-══════════════════════════════════════════ -->
 <header class="topbar">
   <div class="topbar-logo">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -27,56 +24,77 @@
   </div>
   <div class="topbar-actions">
     <label class="load-btn">
-      &#8679; Load inventory.json
+      &#8679; Load JSON
       <input id="jsonFile" type="file" accept="application/json" />
     </label>
   </div>
 </header>
 
-<!-- ══════════════════════════════════════════
-     Navigation tabs
-══════════════════════════════════════════ -->
 <nav class="nav-tabs">
   <div class="nav-tab active" data-view="dashboard">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
       <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
     </svg>
     Dashboard
   </div>
   <div class="nav-tab" data-view="inventory">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
       <rect x="9" y="3" width="6" height="4" rx="1"/>
     </svg>
-    Inventory
+    All Entries
     <span class="tab-count" id="tabCount">0</span>
+  </div>
+  <div class="nav-tab" data-view="registry">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    Registry
+    <span class="tab-count" id="tabCountRegistry">0</span>
+  </div>
+  <div class="nav-tab" data-view="autoruns">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+    Autoruns
+    <span class="tab-count" id="tabCountAutoruns">0</span>
+  </div>
+  <div class="nav-tab" data-view="services">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
+    </svg>
+    Services
+    <span class="tab-count" id="tabCountServices">0</span>
+  </div>
+  <div class="nav-tab" data-view="filesystem">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    </svg>
+    Filesystem
+    <span class="tab-count" id="tabCountFilesystem">0</span>
   </div>
 </nav>
 
-<!-- ══════════════════════════════════════════
-     Main content
-══════════════════════════════════════════ -->
 <main class="main">
 
-  <!-- ── Dashboard View ── -->
+  <!-- ══ Dashboard ══ -->
   <div class="view active" id="view-dashboard">
-
-    <!-- Stat cards row -->
     <div class="cards-grid" id="statsCards"></div>
-
-    <!-- Charts row 1: donut + risk bars -->
     <div class="charts-row">
-
       <div class="panel">
-        <div class="panel-title">Risk Distribution</div>
+        <div class="panel-title">Severity Distribution</div>
         <div class="donut-wrap">
           <div class="donut-chart">
             <svg width="130" height="130" viewBox="0 0 130 130">
               <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="18"/>
-              <circle id="donut-high"   cx="65" cy="65" r="50" fill="none" stroke="var(--high)"   stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
-              <circle id="donut-medium" cx="65" cy="65" r="50" fill="none" stroke="var(--medium)" stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
-              <circle id="donut-low"    cx="65" cy="65" r="50" fill="none" stroke="var(--low)"    stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-critical" cx="65" cy="65" r="50" fill="none" stroke="var(--critical)" stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-high"     cx="65" cy="65" r="50" fill="none" stroke="var(--high)"     stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-medium"   cx="65" cy="65" r="50" fill="none" stroke="var(--medium)"   stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
+              <circle id="donut-low"      cx="65" cy="65" r="50" fill="none" stroke="var(--low)"      stroke-width="18" stroke-dasharray="0 314" stroke-linecap="butt"/>
             </svg>
             <div class="donut-center">
               <div class="donut-total" id="donutTotal">0</div>
@@ -86,104 +104,290 @@
           <div class="donut-legend" id="donutLegend"></div>
         </div>
       </div>
-
       <div class="panel">
-        <div class="panel-title">Risk Breakdown</div>
+        <div class="panel-title">Severity Breakdown</div>
         <div class="risk-bars" id="riskBars"></div>
       </div>
-
     </div>
-
-    <!-- Charts row 2: source breakdown + top publishers -->
     <div class="charts-row">
-
       <div class="panel">
         <div class="panel-title">By Source</div>
         <div class="source-bars" id="sourceBars"></div>
       </div>
-
       <div class="panel">
         <div class="panel-title">Top Publishers</div>
         <div class="pub-list" id="pubList"></div>
       </div>
-
     </div>
+    <div class="panel">
+      <div class="panel-title">Top Findings — Critical &amp; High Severity</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th><th>Name</th><th>Source</th><th>Type</th>
+              <th>Mechanism / Start</th><th>Path</th><th>Why flagged</th>
+            </tr>
+          </thead>
+          <tbody id="topFindingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-  </div><!-- /view-dashboard -->
-
-  <!-- ── Inventory View ── -->
+  <!-- ══ All Entries (Inventory) ══ -->
   <div class="view" id="view-inventory">
-
-    <!-- ══ Query Builder ══ -->
-    <div class="qb-shell" id="queryBuilder">
-
-      <!-- Toolbar row -->
+    <div id="qb-inventory" class="qb-shell">
       <div class="qb-toolbar">
         <div class="qb-toolbar-left">
           <span class="qb-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             Filter
           </span>
-          <!-- AND / OR toggle -->
-          <div class="qb-logic-toggle" id="logicToggle" title="Switch between AND / OR logic">
+          <div class="qb-logic-toggle" data-qb="inventory">
             <span class="qbl-opt active" data-logic="and">AND</span>
             <span class="qbl-opt" data-logic="or">OR</span>
           </div>
-          <span class="qb-match-label" id="matchLabel">All conditions must match</span>
+          <span class="qb-match-label" id="matchLabel-inventory">All conditions must match</span>
         </div>
         <div class="qb-toolbar-right">
-          <button class="qb-btn-ghost" id="qbClearAll" title="Remove all rules">Clear all</button>
-          <button class="qb-btn-add" id="qbAddRule">
+          <button class="qb-btn-ghost" data-clear="inventory">Clear all</button>
+          <button class="qb-btn-add" data-add="inventory">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add rule
           </button>
         </div>
       </div>
-
-      <!-- Rules list -->
-      <div class="qb-rules" id="qbRules"></div>
-
-      <!-- Active filter summary chips -->
-      <div class="qb-chips" id="qbChips"></div>
-
+      <div class="qb-rules" id="qbRules-inventory"></div>
+      <div class="qb-chips" id="qbChips-inventory"></div>
     </div>
-
-    <!-- Inventory table -->
     <div class="panel" style="padding:0">
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Source</th>
-              <th>Scope</th>
-              <th>Publisher</th>
-              <th>Explanation</th>
-              <th>Risk</th>
-              <th>Path</th>
-              <th>Action</th>
+              <th>Severity</th><th>Name</th><th>Type</th><th>Source</th>
+              <th>Scope</th><th>Publisher</th><th>Version</th>
+              <th>Path</th><th>Why flagged</th><th>Explanation</th>
             </tr>
           </thead>
           <tbody id="entriesBody"></tbody>
         </table>
         <div id="emptyState" class="empty" style="display:none">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <p>No entries match current filters</p>
         </div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /view-inventory -->
+  <!-- ══ Registry Tab ══ -->
+  <div class="view" id="view-registry">
+    <div class="tab-header-band">
+      <div class="tab-header-icon tab-icon-registry">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div>
+        <div class="tab-header-title">Registry — Installed Software</div>
+        <div class="tab-header-sub">Sources: registry · registry-msi · os_catalog &nbsp;|&nbsp; Threat hunt: unsigned publishers, TEMP installs, no-date entries</div>
+      </div>
+      <div class="tab-header-legend">
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--high)"></span>No publisher / TEMP path</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--medium)"></span>Missing metadata</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--low)"></span>Standard install</span>
+      </div>
+    </div>
+    <div id="qb-registry" class="qb-shell">
+      <div class="qb-toolbar">
+        <div class="qb-toolbar-left">
+          <span class="qb-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filter</span>
+          <div class="qb-logic-toggle" data-qb="registry"><span class="qbl-opt active" data-logic="and">AND</span><span class="qbl-opt" data-logic="or">OR</span></div>
+          <span class="qb-match-label" id="matchLabel-registry">All conditions must match</span>
+        </div>
+        <div class="qb-toolbar-right">
+          <button class="qb-btn-ghost" data-clear="registry">Clear all</button>
+          <button class="qb-btn-add" data-add="registry"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add rule</button>
+        </div>
+      </div>
+      <div class="qb-rules" id="qbRules-registry"></div>
+      <div class="qb-chips" id="qbChips-registry"></div>
+    </div>
+    <div class="panel" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th><th>Name</th><th>Type</th><th>Source</th>
+              <th>Publisher</th><th>Version</th><th>Install Date</th>
+              <th>Scope</th><th>Install Path</th><th>Registry Key</th>
+              <th>Uninstall Cmd</th><th>Why flagged</th>
+            </tr>
+          </thead>
+          <tbody id="registryBody"></tbody>
+        </table>
+        <div class="empty" id="emptyRegistry" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p>No registry entries match current filters</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Autoruns Tab ══ -->
+  <div class="view" id="view-autoruns">
+    <div class="tab-header-band">
+      <div class="tab-header-icon tab-icon-autoruns">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+      <div>
+        <div class="tab-header-title">Autoruns — Persistence Mechanisms</div>
+        <div class="tab-header-sub">Sources: persistence · autorun_scanner &nbsp;|&nbsp; Threat hunt: winlogon overrides, HKLM run keys, AppData targets</div>
+      </div>
+      <div class="tab-header-legend">
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--critical)"></span>Winlogon / TEMP target</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--high)"></span>HKLM Run key</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--medium)"></span>HKCU / Startup folder</span>
+      </div>
+    </div>
+    <div id="qb-autoruns" class="qb-shell">
+      <div class="qb-toolbar">
+        <div class="qb-toolbar-left">
+          <span class="qb-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filter</span>
+          <div class="qb-logic-toggle" data-qb="autoruns"><span class="qbl-opt active" data-logic="and">AND</span><span class="qbl-opt" data-logic="or">OR</span></div>
+          <span class="qb-match-label" id="matchLabel-autoruns">All conditions must match</span>
+        </div>
+        <div class="qb-toolbar-right">
+          <button class="qb-btn-ghost" data-clear="autoruns">Clear all</button>
+          <button class="qb-btn-add" data-add="autoruns"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add rule</button>
+        </div>
+      </div>
+      <div class="qb-rules" id="qbRules-autoruns"></div>
+      <div class="qb-chips" id="qbChips-autoruns"></div>
+    </div>
+    <div class="panel" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th><th>Name</th><th>Mechanism</th><th>Scope</th>
+              <th>Context / User</th><th>Registry Key</th><th>Value Name</th>
+              <th>Target Command</th><th>Why flagged</th><th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody id="autorunsBody"></tbody>
+        </table>
+        <div class="empty" id="emptyAutoruns" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p>No autorun entries match current filters</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Services Tab ══ -->
+  <div class="view" id="view-services">
+    <div class="tab-header-band">
+      <div class="tab-header-icon tab-icon-services">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+      </div>
+      <div>
+        <div class="tab-header-title">Services &amp; Drivers</div>
+        <div class="tab-header-sub">Source: service — HKLM\SYSTEM\CurrentControlSet\Services &nbsp;|&nbsp; Threat hunt: missing binaries, kernel drivers, SYSTEM + boot-start, failure run_program</div>
+      </div>
+      <div class="tab-header-legend">
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--critical)"></span>Missing binary / TEMP</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--high)"></span>Kernel driver / crash exec</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--medium)"></span>SYSTEM auto-start</span>
+      </div>
+    </div>
+    <div id="qb-services" class="qb-shell">
+      <div class="qb-toolbar">
+        <div class="qb-toolbar-left">
+          <span class="qb-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filter</span>
+          <div class="qb-logic-toggle" data-qb="services"><span class="qbl-opt active" data-logic="and">AND</span><span class="qbl-opt" data-logic="or">OR</span></div>
+          <span class="qb-match-label" id="matchLabel-services">All conditions must match</span>
+        </div>
+        <div class="qb-toolbar-right">
+          <button class="qb-btn-ghost" data-clear="services">Clear all</button>
+          <button class="qb-btn-add" data-add="services"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add rule</button>
+        </div>
+      </div>
+      <div class="qb-rules" id="qbRules-services"></div>
+      <div class="qb-chips" id="qbChips-services"></div>
+    </div>
+    <div class="panel" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th><th>Name</th><th>Type</th><th>Start</th>
+              <th>Account</th><th>Binary Path</th><th>File on Disk</th>
+              <th>File Modified</th><th>Failure Action</th>
+              <th>Privileges</th><th>Why flagged</th>
+            </tr>
+          </thead>
+          <tbody id="servicesBody"></tbody>
+        </table>
+        <div class="empty" id="emptyServices" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p>No service entries match current filters</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Filesystem Tab ══ -->
+  <div class="view" id="view-filesystem">
+    <div class="tab-header-band">
+      <div class="tab-header-icon tab-icon-filesystem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      </div>
+      <div>
+        <div class="tab-header-title">Filesystem — Portable Executables</div>
+        <div class="tab-header-sub">Source: filesystem — recursive .exe scan &nbsp;|&nbsp; Threat hunt: TEMP paths, AppData executables, double extensions</div>
+      </div>
+      <div class="tab-header-legend">
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--critical)"></span>TEMP / double extension</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--high)"></span>AppData executable</span>
+        <span class="th-legend-item"><span class="th-dot" style="background:var(--low)"></span>Program Files</span>
+      </div>
+    </div>
+    <div id="qb-filesystem" class="qb-shell">
+      <div class="qb-toolbar">
+        <div class="qb-toolbar-left">
+          <span class="qb-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filter</span>
+          <div class="qb-logic-toggle" data-qb="filesystem"><span class="qbl-opt active" data-logic="and">AND</span><span class="qbl-opt" data-logic="or">OR</span></div>
+          <span class="qb-match-label" id="matchLabel-filesystem">All conditions must match</span>
+        </div>
+        <div class="qb-toolbar-right">
+          <button class="qb-btn-ghost" data-clear="filesystem">Clear all</button>
+          <button class="qb-btn-add" data-add="filesystem"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add rule</button>
+        </div>
+      </div>
+      <div class="qb-rules" id="qbRules-filesystem"></div>
+      <div class="qb-chips" id="qbChips-filesystem"></div>
+    </div>
+    <div class="panel" style="padding:0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Severity</th><th>Name</th><th>Full Path</th>
+              <th>Directory</th><th>Extension</th><th>Why flagged</th><th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody id="filesystemBody"></tbody>
+        </table>
+        <div class="empty" id="emptyFilesystem" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p>No filesystem entries match current filters</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </main>
 
-<!-- ══════════════════════════════════════════
-     Uninstall confirmation modal
-══════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-icon">

@@ -17,5 +17,7 @@ struct NormalizedSoftwareEntry {
     std::string source;
     std::string explanation;
     std::string userSID;
+    std::string severity;        // "critical" | "high" | "medium" | "low"
+    std::string severityReasons; // semicolon-delimited human-readable reason list
     std::map<std::string, std::string> metadata;
 };
