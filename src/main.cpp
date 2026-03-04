@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 
-
-
 #include "helper/json_exporter.h"
 #include "helper/normalizer.h"
 
@@ -20,7 +18,7 @@ int main() {
         std::vector<std::unique_ptr<IDiscoveryScanner>> scanners;
         scanners.push_back(std::make_unique<RegistryScanner>());
         scanners.push_back(std::make_unique<AutorunScanner>());
-        scanners.push_back(std::make_unique<FilesystemScanner>());
+        //scanners.push_back(std::make_unique<FilesystemScanner>());
         scanners.push_back(std::make_unique<OSCatalogScanner>());
         scanners.push_back(std::make_unique<PersistenceScanner>());
 
