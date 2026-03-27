@@ -21,7 +21,7 @@ int main() {
         scanners.push_back(std::make_unique<AutorunScanner>());
         scanners.push_back(std::make_unique<FilesystemScanner>());
         scanners.push_back(std::make_unique<OSCatalogScanner>());
-        scanners.push_back(std::make_unique<PersistenceScanner>());
+        //scanners.push_back(std::make_unique<PersistenceScanner>());
         scanners.push_back(std::make_unique<ServiceScanner>());
 
         std::vector<RawSoftwareEntry> rawEntries;

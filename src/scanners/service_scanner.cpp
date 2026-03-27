@@ -373,7 +373,9 @@ void enumerateServices(std::vector<RawSoftwareEntry>& entries) {
         entry.rawMetadata["resolvedPath"]     = resolvedPath;
         entry.rawMetadata["objectName"]       = objectName;
         entry.rawMetadata["startType"]        = startTypeStr(rawStart);
-        entry.rawMetadata["serviceType"]      = serviceTypeStr(rawType);
+        entry.rawMetadata["serviceType"]      = serviceTypeStr(
+            
+        );
         entry.rawMetadata["errorControl"]     = errorControlStr(rawError);
         entry.rawMetadata["group"]            = group;
         entry.rawMetadata["tag"]              = (rawTag != 0)
