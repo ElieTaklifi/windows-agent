@@ -47,10 +47,14 @@ It does not inject, hook, block, or remove software. It is a **visibility-first*
 ```text
 mabat-agent/
 ├── src/
-│   ├── main.cpp                    # scanner orchestration + inventory export
+│   ├── main.cpp                    # interactive scan menu + orchestration
 │   ├── software_entry.h            # raw/normalized entry data model
+│   ├── orchestration/
+│   │   ├── scan_menu.*             # interactive CLI menu and user choice handling
+│   │   └── scan_plan.h             # OOP scan profiles (single/general/deep)
 │   ├── scanners/
 │   │   ├── idiscovery_scanner.h    # scanner interface
+│   │   ├── scanner_factory.*       # scanner creation + scanner catalog
 │   │   ├── registry_scanner.*      # uninstall + MSI/UserData enumeration
 │   │   ├── autorun_scanner.*       # Run/RunOnce autorun key discovery
 │   │   ├── filesystem_scanner.*    # executable discovery in Program Files
@@ -82,7 +86,27 @@ mabat-agent/
 - **PersistenceScanner**  
   Enumerates selected persistence surfaces (Run keys, Winlogon values, and Startup folder artifacts).
 
-> Current default pipeline: `RegistryScanner`, `AutorunScanner`, `FilesystemScanner`, `OSCatalogScanner`, and `PersistenceScanner` are all enabled in `main.cpp` and contribute to `inventory.json`.
+> The runtime now presents an interactive CLI menu with multiple scan profiles (single scanner, general, deep).
+
+### Scan Modes (CLI Menu)
+
+When you start the binary, MABAT now shows an interactive menu so operators can choose collection depth on demand:
+
+1. **Run a specific scanner**: executes exactly one scanner (for targeted investigations).
+2. **Run general scan**: balanced coverage for routine inventory runs.
+3. **Run very deep scan**: executes all available scanners including persistence-focused collection.
+4. **Exit**.
+
+Current profile composition:
+
+- **General scan**: `RegistryScanner`, `AutorunScanner`, `FilesystemScanner`, `OSCatalogScanner`, `ServiceScanner`
+- **Very deep scan**: general scan plus `PersistenceScanner`
+- **Specific scanner**: one scanner selected from the scanner catalog at runtime
+
+This feature is implemented with an OOP architecture using:
+- `ScanPlan` polymorphism for scan profiles.
+- `ScanMenu` for command-line interaction.
+- `ScannerFactory` for scanner creation and central scanner metadata.
 
 ### Output Highlights (New)
 
@@ -118,7 +142,7 @@ cmake --build build --config Debug
 .\build\Debug\windows_agent.exe
 ```
 
-On success, MABAT writes `inventory.json` to the working directory.
+The binary now launches an interactive menu for selecting scan scope (`specific`, `general`, `very deep`). After each run, results are exported to `inventory.json` in the working directory.
 
 ### Optional: Open the Dashboard
 

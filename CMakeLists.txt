@@ -13,6 +13,8 @@ add_executable(windows_agent
     src/scanners/os_catalog_scanner.cpp
     src/scanners/persistence_scanner.cpp
     src/scanners/service_scanner.cpp
+    src/scanners/scanner_factory.cpp
+    src/orchestration/scan_menu.cpp
     src/helper/normalizer.cpp
     src/helper/json_exporter.cpp
 )
