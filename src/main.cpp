@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <vector>
@@ -7,6 +8,7 @@
 #include "orchestration/scan_menu.h"
 #include "orchestration/scan_plan.h"
 #include "scanners/scanner_factory.h"
+#include "execution_monitor/run_execution_monitor.h"
 
 namespace {
 
@@ -34,8 +36,35 @@ int runSelectedPlan(const ScanPlan& plan) {
 }  // namespace
 
 
-int main() {
+int main(int argc, char* argv[]) {
     int choice;
+
+    if (argc > 1) {
+        const int argChoice = std::atoi(argv[1]);
+        if (argChoice == 1) {
+            try {
+                const ScanMenu menu;
+                while (true) {
+                    auto selectedPlan = menu.promptForPlan();
+                    if (!selectedPlan) {
+                        break;
+                    }
+                    runSelectedPlan(*selectedPlan);
+                }
+                return 0;
+            } catch (const std::exception& ex) {
+                std::cerr << "Inventory failed: " << ex.what() << '\n';
+                return 1;
+            }
+        }
+        if (argChoice == 2) {
+            run_execution_monitor();
+            return 0;
+        }
+        if (argChoice == 3) {
+            return 0;
+        }
+    }
 
     // Display the menu to the user
     std::cout << "==============================" << std::endl;
@@ -76,7 +105,7 @@ int main() {
 
         case 2:
             std::cout << "\n[Action] Running Dynamic Scanner" << std::endl;
-            // Insert your code for Option 2 here
+            run_execution_monitor();
             break;
 
         case 3:

@@ -17,8 +17,14 @@ add_executable(windows_agent
     src/orchestration/scan_menu.cpp
     src/helper/normalizer.cpp
     src/helper/json_exporter.cpp
+    src/execution_monitor/run_execution_monitor.cpp
+    src/execution_monitor/output/jsonl_writer.cpp
+    src/execution_monitor/etw/etw_session_manager.cpp
+    src/execution_monitor/etw/event_parser.cpp
 )
 
+target_include_directories(windows_agent PRIVATE src)
+
 if (WIN32)
-    target_link_libraries(windows_agent PRIVATE user32)
+    target_link_libraries(windows_agent PRIVATE user32 advapi32 tdh)
 endif()
